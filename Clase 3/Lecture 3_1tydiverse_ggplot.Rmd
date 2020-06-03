@@ -1,0 +1,364 @@
+---
+title: "Lecture 3 tydiverse-ggplot"
+author: "Claudia Soto"
+date: "2/6/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+### R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+summary(cars)
+```
+
+### Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+
+
+### Data distributions
+Let's see one more time the mpg data set.
+```{r}
+library(tidyverse)
+glimpse(mpg)
+```
+```{r}
+#para pedir ayuda, leer la documentación
+#help(mpg)
+```
+
+```{r}
+
+g <- ggplot(mpg, aes(displ)) #+ scale_fill_brewer(palette = "Spectral")
+
+#tamaño del bin o size para cambiar el tamaño
+g + geom_histogram(binwidth = .1, 
+                   col="black", 
+                   size=.1) +  # change binwidth
+  labs(title="Histogram with Auto Binning", 
+       subtitle="Engine Displacement across Vehicle Classes") 
+
+#Histograma básico
+#Auto Bin poner los bins necesarios en ese tamaño, default es 30
+```
+
+Let's do it per class
+```{r}
+#También podemos poner ggplot(mpg,aes(fill =class), pero es mejor tener los datos por separado de las características
+
+g <- ggplot(mpg, aes(displ)) + scale_fill_brewer(palette = "Spectral")
+
+ 
+
+g + geom_histogram(aes(fill=class), 
+                   binwidth = .1, 
+                   col="black", 
+                   size=.1) +  # change binwidth
+  labs(title="Histogram with Auto Binning", 
+       subtitle="Engine Displacement across Vehicle Classes") 
+
+#damos el tamaño de bin, binwdith and size
+
+```
+
+
+```{r}
+#Aquí cambiamos los números de bins
+g + geom_histogram(aes(fill=class),
+                   bins=10,
+                   col="black", size = 0.1) +   # change number of bins
+  labs(title="Histogram with Fixed Bins",
+       subtitle="Engine Displacement across Vehicle Classes")
+
+#Ojo con el tamaño y el número de bins para ver los datos
+
+```
+### Histograma on a categorical variable
+
+```{r}
+#Barra para cada marca, usamos geom_bar
+g <- ggplot(mpg, aes(manufacturer))
+g + geom_bar(aes(fill=class), width = 0.5) +
+  theme(axis.text.x = element_text(angle=65, vjust=0.7)) +
+  labs(title="Histogram on Categorical Variable",
+       subtitle="Manufacturer across Vehicle Classes")
+```
+
+### Density plot
+```{r}
+#alpha, que tan transparente 
+# factor cambia a categórica, 
+#categorías que tenemos
+g <- ggplot(mpg, aes(cty))
+g + geom_density(aes(fill=factor(cyl)), alpha=0.5) +
+    labs(title="Density plot",
+         subtitle="City Mileage Grouped by Number of cylinders",
+         caption="Source: mpg",
+         x="City Mileage",
+         fill="# Cylinders")
+
+```
+
+### Box plots
+The dark line inside the bos represents the median. The top of the box is 75% 
+```{r}
+g <- ggplot(mpg, aes(class, cty))
+g + geom_boxplot(varwidth=T, fill="dodgerblue", alpha = 0.5) +
+    labs(title="Box plot",
+         subtitle="City Mileage grouped by Class of vehicle",
+         caption="Source: mpg",
+         x="Class of Vehicle",
+         y="City Mileage")
+
+#Box plot para todas las categorías
+```
+Setting varwidth=T adjusts the width of the boxes to be proportional to the number of observation it contains.
+
+```{r}
+# divide los boxplot de cada una de las cetegorías
+g <- ggplot(mpg, aes(class, cty))
+g + geom_boxplot(aes(fill=factor(cyl))) +  scale_fill_brewer(palette = "Spectral") +
+  theme(axis.text.x = element_text(angle=65, vjust=0.6)) +
+  labs(title="Box plot",
+       subtitle="City Mileage grouped by Class of vehicle",
+       caption="Source: mpg",
+       x="Class of Vehicle",
+       y="City Mileage")
+```
+
+### Violin part 
+```{r}
+g <- ggplot(mpg, aes(class, cty))
+g + geom_violin() +
+  labs(title="Violin plot",
+       subtitle="City Mileage vs Class of vehicle",
+       caption="Source: mpg",
+       x="Class of Vehicle",
+       y="City Mileage")
+
+```
+
+
+```{r}
+#Trim False, si queremos cortar los datos al más alejado
+
+g + geom_violin(trim=FALSE) + coord_flip()
+```
+
+
+```{r}
+g + geom_violin(trim =TRUE) + coord_flip()
+
+#trim = True default hasta donde lleguen los datos, si le quitamos el Trim = False, hizo extrapolaciones, hace una cosa suave, hace una estimación, no son los datos (para poder ver la tendencia le quitamos el Trim)
+```
+
+### Add summary statistics on a violin plot   
+```{r}
+g <- ggplot(mpg, aes(class, cty))
+p <- g + geom_violin() +
+  labs(title="Violin plot",
+       subtitle="City Mileage vs Class of vehicle",
+       caption="Source: mpg",
+       x="Class of Vehicle",
+       y="City Mileage")
+p
+```
+
+```{r}
+# para las medias
+p + stat_summary(fun=median, geom="point", size=2, color="red")
+```
+```{r}
+p + geom_boxplot(width=0.1)
+```
+
+
+```{r}
+#Divide por cada uno de las calses por color
+#color = class, pero ya estan en el ejex
+g <- ggplot(mpg, aes(class, cty, color = class))
+pc <- g + geom_violin() +
+  labs(title="Violin plot",
+       subtitle="City Mileage vs Class of vehicle",
+       caption="Source: mpg",
+       x="Class of Vehicle",
+       y="City Mileage")
+pc
+```
+
+
+```{r}
+#para cambiar la esca de colores
+pc + scale_color_brewer(palette="Dark2")
+```
+
+
+```{r}
+#podemos poner varias gráficas juntas, parecidas a facet
+
+library("gridExtra")
+```
+
+
+```{r}
+
+p_data <- ggplot(mpg, aes(x = hwy))
+p1 <- p_data + geom_histogram(binwidth = 1, color = "grey30", fill = "white") + 
+  labs(title="Bin width 1")
+p2 <-  p_data + geom_histogram(binwidth = 2, color = "dodgerblue", 
+                               fill = "white", alpha = 0.4) + 
+  labs(title="Bin width 2")
+
+ 
+
+p3 <- p_data + geom_histogram(binwidth = 2, color = "firebrick", 
+                              fill = "white", alpha = 0.2) + 
+  labs(title="Bin width 3")
+
+ 
+
+grid.arrange(p1, p2, p3, ncol = 3)
+```
+
+
+```{r}
+
+library("patchwork")
+```
+
+
+```{r}
+p1 + p2 +p3
+
+```
+
+
+```{r}
+p1 + (p2 + p3)
+
+```
+
+
+```{r}
+p1 / (p2+p3)
+```
+
+
+```{r}
+p1 + p2 / p3
+
+```
+
+
+```{r}
+
+ggplot(mpg, aes(x = hwy)) + geom_histogram(aes(y=..density..), color = "red", fill = "white") +geom_density(alpha = .2, fill = "antiquewhite3") + labs(title="Bin width 1")
+```
+
+### Add Value Markers    
+```{r}
+#Vamos agregar una línea  la media
+ggplot(mpg, aes(x = hwy)) + geom_histogram(aes(y=..density..), color = "grey30", fill = "white") +geom_density(alpha = .2, fill = "antiquewhite3") + labs(title="Bin width 1") + geom_vline(xintercept = mean(mpg$hwy), color = "red", linetype = "dashed")
+
+```
+
+To add lines for grouped data we need to do a little computation prior to plotting
+```{r}
+#Vamos a sacar la media de cada uno de los factores
+#goem_vline para agregar las líneas
+#geom_vline color = factor
+#linetype tipo de línea  "dashed" (codificado en números) = 2
+compare_mean <- mpg %>%
+        group_by(cyl) %>%
+        summarise(Mean = mean(cty))
+
+ 
+
+g <- ggplot(mpg, aes(cty))
+g + geom_density(aes(fill=factor(cyl)), alpha=0.35) + 
+    labs(title="Density plot", 
+         subtitle="City Mileage Grouped by Number of cylinders",
+         caption="Source: mpg",
+         x="City Mileage",
+         fill="# Cylinders") + 
+  geom_vline(data = compare_mean, aes(xintercept = Mean, color = factor(cyl)),
+                   linetype = "dashed", size = 0.8)
+
+```
+
+### Error bars
+```{r}
+# Create new dataframe mpg_means_se
+mpg_means_se <- mpg %>%
+  group_by(manufacturer) %>% # Group the data by manufacturer
+  summarize(mean_cty=mean(cty), # Create variable with mean of cty per group
+            sd_cty=sd(cty), # Create variable with sd of cty per group
+            N_cty=n(), # Create new variable N of cty per group
+            se=sd_cty/sqrt(N_cty), # Create variable with se of cty per group
+            upper_limit=mean_cty+se, # Upper limit
+            lower_limit=mean_cty-se # Lower limit
+            )
+mpg_means_se
+```
+
+```{r}
+ggplot(mpg_means_se, aes(x=manufacturer, y=mean_cty, fill=manufacturer)) +
+  geom_errorbar(aes(ymin=lower_limit, ymax=upper_limit), width = 0.3)
+
+```
+
+```{r}
+
+ggplot(mpg_means_se, aes(x=manufacturer, y=mean_cty, fill=manufacturer)) +
+  geom_errorbar(aes(ymin=lower_limit, ymax=upper_limit), width = 0.3) +
+   geom_bar(stat="identity", alpha= 0.5) 
+
+```
+
+
+```{r}
+ggplot(mpg_means_se, aes(x=manufacturer, y=mean_cty, fill=manufacturer)) +
+  geom_errorbar(aes(ymin=lower_limit, ymax=upper_limit), width = 0.3) +
+   geom_bar(stat="identity", alpha= 0.5) +
+  theme(axis.text.x = element_text(angle=65, vjust=0.6), legend.position = "none") 
+
+
+```
+
+
+```{r}
+ggplot(mpg_means_se, aes(x=manufacturer, y=mean_cty, fill=manufacturer)) +
+  geom_errorbar(aes(ymin=lower_limit, ymax=upper_limit), width = 0.3) +
+   geom_bar(stat="identity", alpha= 0.5) +
+  theme(axis.text.x = element_text(angle=65, vjust=0.6), legend.position = "none") +
+  geom_line(aes(group = 1), size = 0.2, color = "red")
+
+#Cuándo usamos líneas?? Cuando tenemos variables continuas, en este caso no, porque tenemos variables categóricas
+
+```
+
+### Reordering
+```{r}
+#Ordenamos de acuerdo a la media
+
+ggplot(mpg_means_se, aes(x=reorder(manufacturer, mean_cty), y=mean_cty, fill=manufacturer)) +
+  geom_errorbar(aes(ymin=lower_limit, ymax=upper_limit), width = 0.3) +
+   geom_bar(stat="identity", alpha= 0.5) +
+  theme(axis.text.x = element_text(angle=65, vjust=0.6), legend.position = "none")# +
+  #geom_line(aes(group = 1), size = 0.2, color = "red")
+
+```
