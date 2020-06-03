@@ -1,0 +1,118 @@
+---
+title: "Mouse Allergen and Asthma Cohort Study (MAACS)"
+output: html_notebook
+---
+“Are overweight individuals, as measured by body mass index (BMI), more susceptible than normal weight individuals to the harmful effects of PM2.5 on asthma symptoms?”
+
+NocturnalSymp, is the number of days in the past 2 weeks where the child experienced asthma symptoms (e.g. coughing, wheezing) while sleeping.
+
+```{r}
+library(tidyverse)
+maacs <- read.csv("bmi_pm25_no2_sim.csv")
+str(maacs)
+
+```
+```{r}
+#resumen del mapeo que estamos haciendo en x y y
+g <- ggplot(maacs, aes(logpm25, NocturnalSympt))
+summary(g)
+
+```
+
+
+```{r}
+#OJO Siempre tenemos que poner el tipo de geometría, o nos dará en blanco
+g <- ggplot(maacs, aes(logpm25, NocturnalSympt))
+print(g)
+```
+
+
+```{r}
+#Aplicamos las capas para poderlo graficar
+g <- ggplot(maacs, aes(logpm25, NocturnalSympt))
+g + geom_point()
+#Concentración de partículas con respecto al número de días con lo síntomas del asma
+```
+
+
+```{r}
+#Capa tras capa
+g + geom_point() + geom_smooth()
+#Estamos buscando una relación de la concentración de pm25 con los sítomás del asma
+
+```
+
+
+```{r}
+#Por lo que estamos buscando una relación, por ejemplo lineal, cambiamos el método del smooth  y obteenmos una linea recta
+g + geom_point() + geom_smooth(method = "lm")
+
+```
+
+```{r}
+#lo separamos normal y sobrepeso (categoría)
+g + geom_point() +
+        geom_smooth(method = "lm") +
+        facet_grid(. ~ bmicat)
+
+```
+Panel izquierdo, no parece que siga una tendencia lineal, en el panel derecho, tendencia hacia arriba, de forma generalizada en todos los puntos, por lo tanto las personas con sobrepeso tienden a mostrar más síntomas de asmas conforme la concentración de las partículas aumentar pm25 
+
+```{r}
+#Cuestiones de estética de los datos
+#transparencia y tamaño de puntos
+#transparencia de 0.5 (alpha=1/2)
+g + geom_point(color = "steelblue", size = 4, alpha = 1/2)
+```
+
+
+```{r}
+#Para cada categoría
+g + geom_point(aes(color = bmicat), size = 4, alpha = 1/2)
+```
+
+
+```{r}
+#Le agregamos un título y el nombre de los ejes de x y y (label)
+g + geom_point(aes(color = bmicat)) +
+        labs(title = "MAACS Cohort") +
+        labs(x = expression("log " * PM[2.5]), y = "Nocturnal Symptoms")
+```
+
+
+```{r}
+#
+g + geom_point(aes(color = bmicat)) + theme_bw(base_family = "Times")
+
+```
+Extra y-limits
+```{r}
+#Tener nuestros datos por ejemplo g
+
+testdat <- data.frame(x = 1:100, y = rnorm(100)) 
+testdat[50,2] <- 100  ## Outlier!
+g <- ggplot(testdat, aes(x = x, y = y)) #tienen que vivir en este primer objeto
+g + geom_line() # y después le vamos agregando la geometría que necesitamos 
+```
+```{r}
+#datos + geometría + límites
+g + geom_line() + ylim(-3, 3)
+#Se conrtan los outlier
+
+```
+What this does is subset the data so that only observations between -3 and 3 are included, then plot the data.
+
+```{r}
+#Solución para no cortar, sale mal
+#usamos coord_carstesian límites de -3 a 3, y observamos que la línea si sube
+p <- g + geom_line() + coord_cartesian(ylim = c(-3, 3))
+p
+```
+
+
+```{r}
+#Le vamos agreagar texto a la gráfica. la primera en (45,2 ) y la segunda ( 55,2)
+p + annotate("text", x = c(45,55), y = c(2,2), label = c("here1", "here2"),
+             color = c("red", "blue"))
+```
+

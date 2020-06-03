@@ -1,0 +1,93 @@
+---
+title: "QPLOT A GGPLOT"
+output: html_notebook
+---
+
+```{r}
+library(tidyverse)
+mpg
+```
+
+
+```{r}
+#qplot(displ,hwy, data = mpg)
+ggplot(mpg, aes(x=displ, y = hwy)) + geom_point()
+```
+
+
+```{r}
+#qplot(displ, hwy, data = mpg, shape = drv)
+ggplot(mpg, aes(x=displ, y = hwy, shape = drv)) + geom_point()
+```
+
+
+```{r}
+#qplot(displ, hwy, data = mpg, color= drv)
+ggplot(mpg, aes(x=displ, y = hwy, color = drv)) + geom_point()
+```
+
+
+```{r}
+#qplot(displ, hwy, data = mpg, color = drv, shape= drv)
+ggplot(mpg, aes(x = displ, y = hwy, color = drv, shape = drv)) + geom_point()
+```
+
+
+```{r}
+#qplot(displ, hwy, data = mpg, geom = c("point", "smooth") )
+ggplot(mpg, aes(x = displ, y = hwy)) + geom_point() + geom_smooth()
+```
+
+
+```{r}
+#qplot(displ, hwy, data = mpg,color = drv, geom=c("point","smooth"))
+ggplot(mpg, aes(x = displ, y = hwy, color= drv)) + geom_point() + geom_smooth()
+```
+
+
+```{r}
+#qplot(hwy, data = mpg, fill= drv, binwidth = 2)
+ggplot(mpg,aes(x=hwy, fill = drv)) + geom_histogram(binwidth=2)
+```
+
+
+```{r}
+#qplot(drv, hwy, data = mpg, geom = "boxplot")
+ggplot(mpg,aes(x=drv, y = hwy)) + geom_boxplot()
+```
+
+
+```{r}
+#qplot(hwy, data=mpg, facets = drv ~., binwidth=2)
+ggplot(mpg, aes(x= hwy)) + geom_histogram(binwidth = 2) + facet_grid(drv ~.)
+```
+
+
+```{r}
+#qplot(hwy, data = mpg, facets =. ~ drv, binwidth=2)
+ggplot(mpg, aes(x=hwy)) + geom_histogram(binwidth = 2) + facet_grid(.~drv)
+```
+
+
+```{r}
+#qplot(hwy, data = mpg, facets = .~ drv, binwidth=2, fill = drv)
+ggplot(mpg, aes(x=hwy, fill=drv)) + geom_histogram(binwidth = 2) + facet_grid(.~ drv)
+```
+
+
+```{r}
+#qplot(displ, hwy, data =mpg, facets = .~drv)
+ggplot(mpg,aes(x=displ, y = hwy)) + geom_point() +facet_wrap(.~drv)
+```
+
+
+```{r}
+#qplot(displ, hwy, data = mpg, facets = .~ drv) + geom_smooth()
+ggplot(mpg, aes(x=displ, y = hwy)) + geom_point() + facet_wrap(.~drv) + geom_smooth()
+```
+
+
+```{r}
+#qplot(hwy, data = mpg, facets =.~ drv, fill = drv, geom = "density")
+ggplot(mpg, aes(x=hwy, fill = drv)) + geom_density() + facet_wrap(.~drv)
+```

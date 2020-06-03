@@ -1,0 +1,108 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. 
+
+Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Ctrl+Shift+Enter*. 
+
+```{r}
+plot(cars)
+```
+
+Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Ctrl+Alt+I*.
+
+When you save the notebook, an HTML file containing the code and output will be saved alongside it (click the *Preview* button or press *Ctrl+Shift+K* to preview the HTML file).
+
+The preview shows you a rendered HTML copy of the contents of the editor. Consequently, unlike *Knit*, *Preview* does not run any R code chunks. Instead, the output of the chunk when it was last run in the editor is displayed.
+
+```{r}
+library(tidyverse)
+mpg
+```
+
+```{r}
+#obtenemos más información (ej. fila, columna)
+#distinta forma de ver los datos
+str(mpg)
+```
+
+
+```{r}
+#qplot para visualización rápida de los datos
+#x=displ, y = hwy, data = mpg (dónde están los datos)
+qplot(displ,hwy, data = mpg)
+```
+
+
+```{r}
+#drv tipo de transmisión que tiene el coche
+qplot(displ, hwy, data = mpg, shape = drv)
+```
+
+
+```{r}
+#los separamos por color
+qplot(displ, hwy, data = mpg, color= drv)
+#qplot es más sencillo que ggplot, para exploración rápida de los datos
+```
+
+
+```{r}
+#color y forma
+qplot(displ, hwy, data = mpg, color = drv, shape= drv)
+```
+
+
+```{r}
+#tratamos de buscar tendencias geom = c("point","smooth)
+qplot(displ, hwy, data = mpg, geom = c("point", "smooth") )
+```
+
+
+```{r}
+#tendencia, tipo de transmisión
+qplot(displ, hwy, data = mpg,color = drv, geom=c("point","smooth"))
+```
+
+
+```{r}
+qplot(hwy, data = mpg, fill= drv, binwidth = 2)
+#no es buena visualización de los datos
+```
+
+
+```{r}
+#separamos los datos
+qplot(drv, hwy, data = mpg, geom = "boxplot")
+```
+
+
+```{r}
+qplot(hwy, data=mpg, facets = drv ~., binwidth=2)# ~. para mostrarlo en fila o columna, depnde de dónde lo pongamos
+#Nos da en filas
+```
+```{r}
+#En columnas (facets)
+qplot(hwy, data = mpg, facets = ~ drv, binwidth=2)
+```
+
+
+```{r}
+qplot(hwy, data = mpg, facets = .~ drv, binwidth=2, fill = drv)
+```
+
+```{r}
+qplot(displ, hwy, data =mpg, facets = .~drv)
+```
+
+
+```{r}
+qplot(displ, hwy, data = mpg, facets = .~ drv) + geom_smooth()
+```
+
+The qplot() function is useful for quickly putting data on the page/screen
+```{r}
+qplot(hwy, data = mpg, facets =.~ drv, fill = drv, geom = "density")
+```
