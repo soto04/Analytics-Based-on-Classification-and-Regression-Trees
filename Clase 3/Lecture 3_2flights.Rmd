@@ -1,0 +1,315 @@
+---
+title: "Lecture 3 flights"
+author: "Claudia Soto"
+date: "2/6/2020"
+output: html_document
+---
+```{r}
+library(tidyverse)
+library(nycflights13)
+library("patchwork")
+head(flights)
+
+
+```
+
+
+```{r}
+ls("package:nycflights13")
+
+```
+```{r}
+glimpse(airlines)
+glimpse(airports)
+glimpse(flights)
+glimpse(planes)
+glimpse(weather)
+
+
+```
+
+
+```{r}
+
+airlines_data <- airlines
+airports_data <- airports
+flights_data <- flights
+planes_data <- planes
+weather_data <- weather
+
+
+```
+
+### Histograma Año del avión
+```{r}
+
+#min(planes$year, na.rm = TRUE) = 1956
+#max(planes$year, na.rm = TRUE) = 2013
+g <- ggplot(planes_data, aes(year)) #+ scale_fill_brewer(palette = "Spectral")
+
+#tamaño del bin o size para cambiar el tamaño
+g + geom_histogram(binwidth = 1, 
+                   col="black", 
+                   size=.5) +  # change binwidth
+  labs(title="Histogram with Auto Binning", 
+       subtitle="Plane Year Manufactured") +
+  scale_x_continuous(breaks = 1960 + 10*(0:5))
+
+#Histograma básico
+#Auto Bin poner los bins necesarios en ese tamaño, default es 30
+
+
+```
+```{r fig.height = 6, fig.width = 10}
+#También podemos poner ggplot(mpg,aes(fill =class), pero es mejor tener los datos por separado de las características
+
+g <- ggplot(planes_data, aes(year)) + scale_fill_brewer(palette = "Set1")
+
+g + geom_histogram(aes(fill=engine), 
+                   binwidth = 1, 
+                   col="black", 
+                   size=.1) +  # change binwidth
+  labs(title="Histogram with Auto Binning", 
+       subtitle="Year Manufactured and Engine") +
+  scale_x_continuous(breaks = 1960 + 10*(0:5))
+
+#damos el tamaño de bin, binwdith and size
+```
+
+
+```{r fig.height = 6, fig.width = 10}
+
+g + geom_histogram(aes(fill=engine), 
+                   binwidth = 4, 
+                   col="black", 
+                   size=.1) +  # change binwidth
+  labs(title="Histogram with Fixed Bins", 
+       subtitle="Year Manufactured and Engine") +
+  scale_x_continuous(breaks = 1960 + 10*(0:5))
+```
+### Histograma on a categorical variable
+```{r fig.height = 6, fig.width = 11}
+g <- ggplot(planes_data, aes(y = manufacturer))
+g + geom_bar(aes(fill=engine), width = 0.9)  +
+  labs(title="Histogram on Categorical Variable",
+       subtitle="Manufactured and Engine")
+```
+### Density plot
+```{r fig.height = 6, fig.width = 11}
+
+g <- ggplot(flights_data, aes(distance))
+g + geom_density(aes(fill=factor(origin)), alpha=0.4) +
+    labs(title="Density plot",
+         subtitle="Distance by Origin (NYC AIRPORTS)",
+         caption="Source: nycflights13",
+         x="Distance",
+         fill="Origin")
+
+```
+### Box plots
+```{r }
+
+flights2_data <- flights_data %>% 
+  left_join(airlines)
+
+g <- ggplot(flights2_data, aes(name, distance))
+g + geom_boxplot(varwidth=T, fill="dodgerblue", alpha = 0.5) +
+  theme(axis.text.x = element_text(angle=90, vjust=0.7, size=7.5)) +
+    labs(title="Box plot",
+         subtitle="Distance grouped by airline",
+         caption="Source: nycflights13",
+         x="Airline",
+         y="Distance")
+
+
+
+#Box plot para todas las categorías
+```
+```{r fig.height = 6, fig.width = 11}
+# divide los boxplot de cada una de las cetegorías
+g <- ggplot(flights2_data, aes(name, distance))
+g + geom_boxplot(aes(fill=factor(origin))) +  scale_fill_brewer(palette = "Set1") +
+  theme(axis.text.x = element_text(angle=90, vjust=0.6,size= 7)) +
+  labs(title="Box plot",
+       subtitle="Distance grouped by airline",
+       caption="Source: nycflights13",
+       factor = "Origin",
+         x="Airline",
+         y="Distance")
+```
+
+
+### Violin part 
+
+```{r }
+g <- ggplot(flights2_data, aes(origin, distance))
+g + geom_violin() +
+  labs(title="Violin plot",
+       subtitle="Distance by Origin (NYC AIRPORTS)",
+       caption="Source: nycflight13",
+       x="Origin",
+       y="Distance")
+```
+```{r}
+g + geom_violin(trim =TRUE) + coord_flip()
+```
+### Add summary statistics on a violin plot  
+```{r}
+g <- ggplot(flights2_data, aes(origin, distance))
+p <- g + geom_violin() +
+  labs(title="Violin plot",
+       subtitle="Distance by Origin (NYC AIRPORTS)",
+       caption="Source: nycflight13",
+       x="Origin",
+       y="Distance") +
+  coord_flip()
+p
+```
+```{r}
+p + stat_summary(fun=median, geom="point", size=2, color="red")
+
+
+```
+```{r}
+p + geom_boxplot(width=0.05)
+```
+```{r}
+#Divide por cada uno de las calses por color
+#color = class, pero ya estan en el ejex
+
+g <- ggplot(flights2_data, aes(origin, distance, color = origin))
+pc <- g + geom_violin() +
+  labs(title="Violin plot",
+       subtitle="Distance by Origin (NYC AIRPORTS)",
+       caption="Source: nycflight13",
+       x="Origin",
+       y="Distance") +
+  coord_flip() +
+   scale_color_brewer(palette="Set1")
+pc
+
+
+```
+### Multiple Graphs (Air time, amount of time spent in the air in minutes)
+```{r}
+p_data <- ggplot(flights2_data,aes(x = air_time))
+
+p1 <- p_data + geom_histogram(binwidth = 7, color = "steelblue", fill = "white") + 
+  labs(title="Bin width 7")
+p2 <-  p_data + geom_histogram(binwidth = 10, color = "dark blue", 
+                               fill = "blue", alpha = 0.4) + 
+  labs(title="Bin width 10")
+
+p3 <- p_data + geom_histogram(binwidth = 12, color = "firebrick", 
+                              fill = "dark red", alpha = 0.2) + 
+  labs(title="Bin width 12")
+
+ p1 + (p2 /p3)
+ 
+
+```
+
+```{r}
+ p1 / (p2 +p3)
+```
+
+### Histogram and Density 
+```{r}
+ggplot(flights2_data,aes(x = air_time)) + 
+  geom_histogram(binwidth = 7,aes(y=..density..), color = "steelblue2", fill = "steelblue4") +
+  geom_density(alpha = .2, fill = "lightblue1") + labs(title="Air Time")
+
+```
+### Add Value Markers 
+```{r}
+
+ggplot(flights2_data,aes(x = air_time)) + 
+  geom_histogram(binwidth = 7,aes(y=..density..), color = "steelblue2", fill = "steelblue4", alpha = 0.8)+
+ geom_density(alpha = .2, fill = "lightblue1") + labs(title="Air Time") + 
+  geom_vline(xintercept = mean(flights2_data$air_time, na.rm=TRUE), color = "red", linetype = "dashed")
+
+
+```
+
+### Air Time (Top 5 airlines)
+```{r}
+compare_mean <- flights2_data %>%
+        group_by(name) %>%
+        summarise(Mean = mean(air_time, na.rm=TRUE)) %>% 
+        top_n(5)
+
+# Separar los Top 5 según su media
+flights3_data <- flights2_data %>% 
+  filter(name %in%  compare_mean$name)
+ 
+
+g <- ggplot(flights3_data, aes(x = air_time))
+g + geom_density(aes(fill=factor(name)), alpha=0.35) + 
+    labs(title="Density plot", 
+         subtitle="Amount of time by Airlines(Top 5)",
+         caption="Source: nycflights13",
+         x="Air Time",
+         fill="Name of the Airline") + 
+  geom_vline(data = compare_mean, aes(xintercept = Mean, color = factor(name)),
+                   linetype = "dashed", size = 0.8)
+
+```
+
+### Error bars Top 10 airlines (Air Time)
+```{r}
+
+compare_mean <- flights2_data %>%
+        group_by(name) %>%
+        summarise(Mean = mean(air_time, na.rm=TRUE)) %>% 
+        top_n(10)
+
+# Separar los Top 5 según su media
+flights3_data <- flights2_data %>% 
+  filter(name %in%  compare_mean$name)
+
+
+
+
+flights_means_se <- flights3_data %>%
+  group_by(name) %>% 
+  summarize(mean_air = mean(air_time, na.rm = TRUE), 
+            sd_air=sd(air_time, na.rm = TRUE), 
+            N_air=n(), 
+            se = sd_air/sqrt(N_air), 
+            upper_limit=mean_air+se, 
+            lower_limit=mean_air-se 
+            )
+flights_means_se 
+
+
+```
+
+
+```{r}
+ggplot(flights_means_se, aes(x = name, y=mean_air, fill=name)) +
+  geom_errorbar(aes(ymin=lower_limit, ymax=upper_limit), width = 0.2) +
+   theme(axis.text.x = element_text(angle=70, vjust=0.6,size= 7))
+
+ggplot(flights_means_se, aes(y = name, x = mean_air, fill=name)) +
+  geom_errorbar(aes(xmin=lower_limit, xmax=upper_limit), width = 0.2)# +
+ #  theme(axis.text.x = element_text(angle=70, vjust=0.6,size= 7))
+
+```
+
+
+```{r}
+
+ggplot(flights_means_se, aes(y = name, x = mean_air, fill=name)) +
+  geom_errorbar(aes(xmin=lower_limit, xmax=upper_limit), width = 0.2) +
+   geom_bar(stat="identity", alpha= 0.5)
+
+```
+
+### Reordering
+```{r}
+
+ggplot(flights_means_se, aes(y = reorder(name, mean_air), x = mean_air, fill=name)) +
+  geom_errorbar(aes(xmin=lower_limit, xmax=upper_limit), width = 0.2) +
+   geom_bar(stat="identity", alpha= 0.5)
+
+```

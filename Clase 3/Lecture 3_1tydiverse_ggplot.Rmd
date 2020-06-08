@@ -50,7 +50,8 @@ g + geom_histogram(binwidth = .1,
                    col="black", 
                    size=.1) +  # change binwidth
   labs(title="Histogram with Auto Binning", 
-       subtitle="Engine Displacement across Vehicle Classes") 
+       subtitle="Engine Displacement across Vehicle Classes")
+
 
 #Histograma básico
 #Auto Bin poner los bins necesarios en ese tamaño, default es 30
