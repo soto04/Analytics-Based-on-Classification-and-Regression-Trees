@@ -1,9 +1,24 @@
 ---
 title: "Lecture 3 flights"
+output: 
+  md_document:
+    toc: yes
+    toc_float: yes
+    theme: cerulean
+    highlight: tango
+  github_document:
+    toc: yes
+    dev: jpeg
+date: '2020-06-08'
 author: "Claudia Soto"
-date: "2/6/2020"
-output: html_document
+    
 ---
+
+```{r paquterias ocultas, echo=FALSE, results='hide', message=FALSE}
+library(xtable)
+library(knitr)
+```
+
 ```{r}
 library(tidyverse)
 library(nycflights13)
