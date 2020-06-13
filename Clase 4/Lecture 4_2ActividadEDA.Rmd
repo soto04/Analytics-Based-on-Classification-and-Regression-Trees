@@ -1,0 +1,369 @@
+---
+title: "EDA Actividad"
+author: "Claudia Soto"
+date: "9/6/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Actividad, dejar las condiciones, pero buscar relaciones entre algunas otras dos variables
+
+```{r}
+library(moderndive)
+library(tidyverse)
+library(patchwork)
+```
+
+```{r}
+glimpse(house_prices)
+```
+
+
+```{r}
+
+p1 <- ggplot(house_prices, aes(x = yr_built)) +
+  geom_histogram(binwidth = 1, color = "forestgreen", fill = "mediumseagreen") +
+  labs(x = "Year_built", title = "Built Year")
+p1
+
+
+
+```
+
+
+```{r}
+p2 <- ggplot(house_prices, aes(x = sqft_above)) + 
+  geom_histogram(binwidth = 100, color="steelblue",  fill = "cornflowerblue") +
+  labs(x = "Sqft_above", title = "Square footage above")
+
+p2
+```
+
+
+```{r}
+p3 <- ggplot(house_prices, aes(x = condition)) + 
+  geom_bar(aes(fill = condition)) + 
+  labs( x = "condition", title =" House condition") + 
+  scale_fill_brewer(palette = "Set2") +
+  theme(legend.position = "none")
+
+p3
+
+```
+```{r}
+p4 <- ggplot(house_prices, aes(x = grade)) + geom_bar(aes(fill = grade)) + 
+  labs( x = "grade", title =" House Grade") + 
+  theme(legend.position = "none")
+
+p4
+
+
+```
+
+
+```{r}
+p3 / (p1+p2)
+```
+```{r}
+p4 / (p1+p2)
+```
+
+
+```{r}
+metros <- 0.092903
+p2_new <- ggplot(house_prices, aes(x = sqft_above*metros)) + 
+  geom_histogram(bins = 50, color="steelblue",  fill = "cornflowerblue") +
+  labs(x = "Sqmts_above", title = "Square meters above")
+p2_new
+```
+
+```{r}
+p3 / (p1+p2_new)
+```
+```{r}
+p4 / (p1+p2_new)
+```
+
+```{r}
+(p3 +p4) /(p1+p2_new)
+```
+```{r}
+house_prices_new <-  house_prices%>% 
+  mutate(sqmts_above = sqft_above*metros)
+```
+
+
+```{r}
+house_prices_new %>% 
+  summarize(mean_year = mean(as.numeric(yr_built)),
+          median_year = median(as.numeric(yr_built)),
+          sd_year =sd(as.numeric(yr_built)))
+
+```
+```{r}
+house_prices_new %>% 
+  summarize(mean_above = mean(as.numeric(sqmts_above)),
+          median_above = median(as.numeric(sqmts_above)),
+          sd_above =sd(as.numeric(sqmts_above)))
+
+```
+
+
+```{r}
+house_prices_new <-  house_prices_new %>% 
+  mutate(log10_above = log10(sqmts_above),
+         log10_price = log10(price*21))
+
+```
+
+```{r}
+p2_before <- ggplot(house_prices_new, aes(x = sqmts_above)) + 
+  geom_histogram(binwidth = 100, color="steelblue",  fill = "cornflowerblue") +
+  labs(x = "Sqmts_above", title = "Square meters above: Before")
+
+p2_after <- ggplot(house_prices_new , aes(x = log10_above)) + 
+  geom_histogram(bins = 100, color="black",  fill = "slateblue") +
+  labs(x = "Sqmts_above log", title = "Square meters above: After") 
+
+p2_before / p2_after
+
+
+```
+
+
+```{r}
+(p3 + p4) / (p1+p2_after)
+```
+
+
+```{r}
+
+
+g <- ggplot(house_prices_new, aes(x = grade)) + 
+  geom_bar(aes(fill = condition)) +
+  labs(x = "grade", title = "House Grade and Condition") +
+   scale_fill_brewer(palette = "Dark2")
+g
+  
+```
+
+```{r}
+g <- ggplot(house_prices_new, aes(x = condition, y = sqmts_above, color = condition)) + 
+  geom_violin() +
+  labs(title="Violin plot",
+       subtitle="Square meters above by condition",
+       x="Condition",
+       y="Square meters_above") +
+   scale_color_brewer(palette="Set1") +
+  stat_summary(fun=median, geom="point", size=2, color="red")
+
+g
+
+```
+```{r}
+g <- ggplot(house_prices_new, aes(x = condition, y = yr_built, color = condition)) + 
+  geom_violin() +
+  labs(title="Violin plot",
+       subtitle="Built year by condition",
+       x="Condition",
+       y="Yr_built") +
+   scale_color_brewer(palette="Dark2") +
+  stat_summary(fun=median, geom="point", size=2, color="red")
+g
+
+```
+
+
+```{r}
+g <- ggplot(house_prices_new, aes(x = grade, y = sqmts_above)) + 
+  geom_boxplot( fill="midnightblue", alpha = 0.7) +
+  labs(title="Box plot",
+       subtitle="Square meters above by grade",
+       factor = "Condition",
+         x="Grade",
+         y="Square meters above")
+g
+
+```
+```{r}
+
+g1 <- ggplot(house_prices_new, aes(x = grade, y = sqmts_above))+ 
+  geom_boxplot(aes(fill = condition)) +  scale_fill_brewer(palette = "Set1") +
+  labs(title="Box plot",
+       subtitle="Square meters above by grade",
+       factor = "Condition",
+         x="Grade",
+         y="Square meters above")
+g1
+
+
+```
+
+
+
+```{r}
+g <- ggplot(house_prices_new, aes(x = grade, y = yr_built))+
+  geom_boxplot( fill="navyblue", alpha = 0.7) +
+  labs(title="Box plot",
+       subtitle="Built Year by grade",
+       factor = "Condition",
+         x="Grade",
+         y="year_built")
+g
+```
+
+
+
+```{r}
+g1 <- ggplot(house_prices_new, aes(x = grade, y = yr_built))+ 
+  geom_boxplot(aes(fill = condition)) +  scale_fill_brewer(palette = "Set1") +
+  labs(title="Box plot",
+       subtitle="Built Year by grade",
+       factor = "Condition",
+         x="Grade",
+         y="year_buil")
+g1
+
+```
+
+### Modeling
+
+```{r}
+ggplot(house_prices_new, aes (x = log10_above, y = log10_price, color = condition)) +
+  geom_point(alpha = 0.4, size = 1) +
+  labs(title = "House prices in Seattle", y = "log10 price", x = "log10 above") 
+
+```
+
+
+```{r}
+ggplot(house_prices_new, aes (x = log10_above, y = log10_price, color = condition)) +
+  geom_point(alpha = 0.4, size = 0.5) +
+  labs(title = "House prices in Seattle", y = "log10 price", x = "log10 above")   +
+  facet_wrap(~condition) +
+  geom_smooth(method ="lm", size = 1)
+
+
+```
+```{r}
+ggplot(house_prices_new, aes (x = yr_built, y = log10_price, color = condition)) +
+  geom_point(alpha = 0.4, size = 0.5) +
+  labs(title = "House prices in Seattle", y = "log10 price", x = "log10 above")   +
+  facet_wrap(~condition) +
+  geom_smooth(method ="lm", size = 1)
+
+
+```
+```{r}
+ggplot(house_prices_new, aes (x = as.numeric(grade), y = log10_price, color = condition)) +
+  geom_point(alpha = 0.4, size = 0.5) +
+  labs(title = "House prices in Seattle", y = "log10 price", x = "log10 above")   +
+  facet_wrap(~ condition) +
+  geom_smooth(method ="lm", size = 1)
+```
+
+### A simple regression model
+# Fit regression model
+
+```{r}
+# log10_size * condition (para cada una de las condiciones, data donde viven nuestros datos)
+# y = log10_price, x = log10_size
+price_prediction <- lm(log10_price ~ log10_above * condition , data = house_prices_new)
+
+parameters <- get_regression_table(price_prediction)
+
+parameters
+
+#parameters  condicion1  en las primeras dos entradas intercept, log10_size (base line en condición 1)
+# condición 2- condición 5 tomamos el interceptoo y lo sumamos con lo de condición 2, los vamos a sumar log10_si + log10_size_condition
+```
+
+### Hacer predicciones
+```{r}
+# Parámetros
+params <- parameters$estimate
+params
+```
+
+
+```{r}
+
+# Función
+#if condición1
+
+prediction <- function(params, above, indx) {
+output <- if(indx == 1) params[1] + params[2] *log10(above) else (params[1] + params[1+indx]) +  (params[2] + params[5+indx]) *log10(above)
+return(10^(output)) # going back to pesos
+}
+```
+
+Predicción, above = 82 - conditions = 3
+```{r}
+#prediccion
+
+prediction(params, 82, 3)
+#Ejemplo en clase : 6025596
+```
+
+
+```{r}
+price_prediction <- lm(log10_price ~ yr_built * condition , data = house_prices_new)
+
+parameters <- get_regression_table(price_prediction)
+
+parameters
+```
+
+
+```{r}
+params <- parameters$estimate
+params
+```
+
+
+```{r}
+prediction <- function(params, year, indx) {
+output <- if(indx == 1) params[1] + params[2] *year else (params[1] + params[1+indx]) +  (params[2] + params[5+indx]) *year
+return(10^(output)) # going back to pesos
+}
+
+```
+
+
+Predicción, Año = 200 conición = 3
+```{r}
+
+#No es un un buen predictor
+prediction(params, 2000, 3)
+```
+
+
+```{r}
+price_prediction <- lm(log10_price ~ log10_above * grade , data = house_prices_new)
+
+parameters <- get_regression_table(price_prediction)
+
+parameters
+
+```
+```{r}
+params <- parameters$estimate
+params
+```
+
+
+```{r}
+prediction <- function(params, above, indx) {
+output <- if(indx == 1) params[1] + params[2] *log10(above) else (params[1] + params[1+indx]) +  (params[2] + params[12+indx]) *log10(above)
+return(10^(output)) # going back to pesos
+}
+```
+
+Predicción, Grade = 6, above = 100
+```{r}
+prediction(params, 100, 6)
+```
+
