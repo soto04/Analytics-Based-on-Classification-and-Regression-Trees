@@ -1,0 +1,236 @@
+---
+title: "EDA"
+author: "Claudia Soto"
+date: "9/6/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Exploratory Data Analysis (EDA)
+
+```{r}
+
+#Precios de casas Seattle 
+library(moderndive)
+```
+
+```{r}
+library(tidyverse)
+library(patchwork)
+```
+
+```{r}
+#Visualizamos los datos
+View(house_prices)
+glimpse(house_prices)
+#<fct> tipo factor puede ser nuestro categórico
+```
+
+```{r}
+
+#geom_histogram... binwidht =200,000 cajitas
+#cada 200,000USD
+p1 <- ggplot(house_prices, aes(x = price)) +  geom_histogram(binwidth =200000, color="white") + labs(x="price (USD)", title ="House price")
+p1
+
+```
+```{r}
+
+
+p2 <- ggplot(house_prices, aes(x = sqft_living)) + geom_histogram(binwidth = 500, fill = "orange", color="white") +
+  labs(x = "living space (square feet)", title = "House size")
+p2
+```
+## Barplot of condition: How good the condition is (overall)
+```{r}
+p3 <- ggplot(house_prices, aes(x = condition)) + geom_bar(aes(fill = condition)) + labs( x = "condition", title =" House condition") + theme(legend.position = "none")
+
+p3
+
+
+```
+
+## Todas las gráficas juntas
+```{r}
+(p1 + p2) /  p3
+
+```
+##Ejercicio: Transformar a pesos y metros cuadrados
+
+```{r}
+
+p1new <- ggplot(house_prices, aes(x = price*21)) +
+  geom_histogram(binwidth = 4000000, fill = "gray", color = "black") +
+  labs (x = "price(MXN)", title =  "House price")
+
+p1new
+  
+
+```
+
+
+```{r}
+
+p2new <- ggplot(house_prices, aes(x = sqft_living*0.092903)) + geom_histogram(binwidth = 40, fill = "orange", color="white") +
+  labs(x = "living space (square meters)", title = "House size")
+
+p2new
+```
+
+
+```{r}
+(p1new + p2new) /  p3
+
+
+```
+
+
+```{r}
+house_prices %>% 
+  summarize(mean_price = mean(price*21),
+          median_price = median(price*21),
+          sd_price =sd(price*21))
+
+```
+
+
+```{r}
+house_prices %>% 
+  summarize(mean_mts_living = mean(sqft_living*0.092903),
+          median_mts_living = median(sqft_living*0.092903),
+          sd_mts_living =sd(sqft_living*0.092903))
+
+#Tenemos valores muy grandes a la derecha y muy pequeños a la izquierda.. el promedio se ve afectado por los datos de la derecha
+#Para resolverlo aplicamos transformación
+
+```
+
+
+```{r}
+house_prices_new <- house_prices %>% 
+  mutate(log10_price = log10(price*21),
+         log10_size = log10(sqft_living*0.092903))
+
+glimpse(house_prices_new)
+```
+
+
+```{r}
+
+house_prices_new %>% 
+  select(log10_price,  log10_size)
+```
+
+
+```{r}
+
+p_before <- ggplot(house_prices, aes(x = price*21)) +
+  geom_histogram(binwidth = 4000000, fill = "black", color = "white") +
+  labs (x = "price(MXN)", title =  "House price: Before")
+
+p_after <- ggplot(house_prices_new, aes(x = log10_price)) +
+  geom_histogram(bins=40, fill = "dodgerblue", color = "white") +
+  labs (x = "price(MXN)", title =  "House price: After (log scale)")
+
+ p_before + p_after
+
+
+```
+
+
+```{r}
+p_before_mts <- ggplot(house_prices, aes(x = sqft_living*0.092903)) + geom_histogram(binwidth = 40, fill = "black", color="white") +
+  labs(x = "living space (square meters)", title = "House size: Before")
+
+
+p_after_mts <- ggplot(house_prices_new, aes(x = log10_size)) + geom_histogram(bins = 40, fill = "brown", color="white") +
+  labs(x = "living space (square meters)", title = "House size: After (log scale")
+
+ p_before_mts + p_after_mts
+
+
+
+```
+
+
+```{r}
+ (p_before_mts + p_after_mts) /p3
+
+```
+
+# Modeling
+The goal of modeling however is to explore relationships between variables.
+```{r}
+ggplot(house_prices_new, aes (x = log10_size, y = log10_price, color = condition)) +
+  geom_point(alpha = 0.5, size = 0.5) +
+  labs(title = "House prices in Seattle", y = "log10 price", x = "log10 size")
+
+```
+
+
+```{r}
+ggplot(house_prices_new, aes (x = log10_size, y = log10_price, color = condition)) +
+  geom_point(alpha = 0.5, size = 0.5) +
+  labs(title = "House prices in Seattle", y = "log10 price", x = "log10 size") +
+  facet_wrap(~condition)
+
+```
+
+
+```{r}
+ggplot(house_prices_new, aes (x = log10_size, y = log10_price, color = condition)) +
+  geom_point(alpha = 0.5, size = 0.5) +
+  labs(title = "House prices in Seattle", y = "log10 price", x = "log10 size") +
+  facet_wrap(~condition) +
+  geom_smooth(method ="lm")
+
+
+```
+### A simple regression model
+# Fit regression model
+
+```{r}
+
+# log10_size * condition (para cada una de las condiciones, data donde viven nuestros datos)
+# y = log10_price, x = log10_size
+price_prediction <- lm(log10_price ~ log10_size * condition, data = house_prices_new)
+
+parameters <- get_regression_table(price_prediction)
+
+parameters
+
+#parameters  condicion1  en las primeras dos entradas intercept, log10_size (base line en condición 1)
+# condición 2- condición 5 tomamos el interceptoo y lo sumamos con lo de condición 2, los vamos a sumar log10_si + log10_size_condition
+```
+Hacer prediciones
+
+```{r}
+# Parámetros
+params <- parameters$estimate
+params
+```
+
+
+```{r}
+
+# Función
+#condición 5, casa que mide 250mts^2, cuánto me van a dar?
+#if condición1
+
+prediction <- function(params, size, indx) {
+output <- if(indx == 1) params[1] + params[2] *log10(size) else (params[1] + params[1+indx]) +  (params[2] + params[5+indx]) *log10(size)
+return(10^(output)) # going back to pesos
+}
+
+```
+
+
+```{r}
+#prediccion
+#250 tamaño, 5 condición
+prediction(params, 100, 3)
+```
+
