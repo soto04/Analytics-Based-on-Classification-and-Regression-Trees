@@ -251,7 +251,7 @@ ggplot(house_prices_new, aes (x = log10_above, y = log10_price, color = conditio
 ```{r}
 ggplot(house_prices_new, aes (x = yr_built, y = log10_price, color = condition)) +
   geom_point(alpha = 0.4, size = 0.5) +
-  labs(title = "House prices in Seattle", y = "log10 price", x = "log10 above")   +
+  labs(title = "House prices in Seattle", y = "log10 price", x = "Year")   +
   facet_wrap(~condition) +
   geom_smooth(method ="lm", size = 1)
 
@@ -260,7 +260,7 @@ ggplot(house_prices_new, aes (x = yr_built, y = log10_price, color = condition))
 ```{r}
 ggplot(house_prices_new, aes (x = as.numeric(grade), y = log10_price, color = condition)) +
   geom_point(alpha = 0.4, size = 0.5) +
-  labs(title = "House prices in Seattle", y = "log10 price", x = "log10 above")   +
+  labs(title = "House prices in Seattle", y = "log10 price", x = "Grade")   +
   facet_wrap(~ condition) +
   geom_smooth(method ="lm", size = 1)
 ```
