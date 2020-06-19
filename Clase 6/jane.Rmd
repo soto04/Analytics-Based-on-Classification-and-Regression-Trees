@@ -1,0 +1,95 @@
+---
+title: "Jane Austen Books"
+author: "Claudia Soto"
+date: "18/6/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r}
+library(tidyverse)
+library(janeaustenr)
+library(tidytext)
+
+```
+
+
+```{r}
+summary(austen_books())
+```
+
+```{r}
+
+#cargar los libros de jean
+book_words <- austen_books() %>%
+  unnest_tokens(word, text) %>% #separando cada libro por palabras
+  count(book, word, sort = TRUE)#contando cada palabra de los libros (cuántes veces)
+
+book_words
+
+```
+
+
+```{r}
+total_words <- book_words %>% 
+  group_by(book) %>% 
+  summarize(total = sum(n))
+#número total de palabras en cada uno de los libros
+total_words
+
+
+```
+
+
+```{r}
+book_words <- left_join(book_words, total_words) #juntar book_words con total_words
+
+book_words
+
+```
+
+
+```{r}
+freq_by_rank <- book_words %>% 
+  group_by(book) %>% #agrupar por libro
+  mutate(rank = row_number(), 
+         `term frequency` = n/total)# agregamos rango(la más común, el segundo menos común, etc) y frecuencia
+
+freq_by_rank
+```
+
+
+```{r}
+book_words <- book_words %>%
+  bind_tf_idf(word, book, n) 
+
+# tf_idf = tf*idf
+book_words
+```
+```{r}
+
+book_words %>%
+  select(-total) %>%
+  arrange(desc(tf_idf))
+
+
+```
+
+```{r}
+book_words %>%
+  arrange(desc(tf_idf)) %>%
+  mutate(word = factor(word, levels = rev(unique(word)))) %>% 
+  group_by(book) %>% 
+  top_n(15) %>% 
+  ungroup() %>%
+  ggplot(aes(word, tf_idf, fill = book)) +
+  geom_col(show.legend = FALSE) +
+  labs(x = NULL, y = "tf-idf") +
+  facet_wrap(~book, ncol = 2, scales = "free") +
+  coord_flip()
+```
+
