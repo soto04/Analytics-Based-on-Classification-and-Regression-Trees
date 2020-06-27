@@ -1,0 +1,53 @@
+---
+title: "iris_dataset"
+author: "Claudia Soto"
+date: "27/6/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+```
+
+
+
+```{r}
+library(datasets)
+library(tidyverse)
+library(tidymodels)
+
+head(iris)
+```
+
+
+```{r}
+library(ggplot2)
+ggplot(iris, aes(Petal.Length, Petal.Width, color = Species)) + geom_point()
+
+```
+
+
+
+```{r}
+set.seed(123)
+iris_k <- kmeans(iris[,c("Petal.Length", "Petal.Width", "Sepal.Length", "Sepal.Width")], centers = 3, nstart = 3)
+augment(iris_k, iris_c)
+
+```
+```{r}
+set.seed(123)
+iris_c <- iris
+iris_k <- kmeans(iris[,c("Petal.Length", "Petal.Width")], centers = 3, nstart = 3)
+augment(iris_k, iris_c)
+```
+
+
+```{r}
+ggplot() +
+geom_point(data = iris, aes(Petal.Length, Petal.Width, shape = Species), size = 3) +
+  scale_shape_manual(values=c(3, 15, 17)) +
+  geom_point(data = augment(iris_k, iris_c), aes(Petal.Length, Petal.Width, color =.cluster),alpha = 0.3, size = 5)
+```
+
+
