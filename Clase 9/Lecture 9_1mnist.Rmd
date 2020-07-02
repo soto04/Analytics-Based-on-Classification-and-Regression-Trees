@@ -1,0 +1,251 @@
+---
+title: "MNIST"
+author: "Claudia Soto"
+date: "27/6/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+### Well known examples for classification (with unsupervised learning)
+
+The MNIST data set is a well known example for classification. Here, for academic porpuses we will use unsupervised learning to try to achieve this task. Let's do it by performing k-means clustering on the MNIST pixel features an see if we can identify unique clusters of digits without using the response variable. Here, we declare \(k = 10\) only because we already know there are 10 unique digits represented in the data.
+
+
+```{r}
+library(tidyverse)
+library(dslabs)
+library(tidymodels)
+
+#install.packages("dslabs")
+# https://bradleyboehmke.github.io/HOML/kmeans.html
+mnist <- dslabs::read_mnist()
+
+```
+
+```{r}
+glimpse(mnist)
+#Las labels son el número que le corresponde
+
+```
+```{r}
+#por el momento solo usamos images, y no labels
+features<- mnist$train$images
+glimpse(features)
+
+#784 pixeles
+```
+
+But, I want to see the pictures, how? (with ggplot)
+```{r}
+str(features[1,])
+d <- matrix(features[1,], nrow = 28, byrow = TRUE)
+#matrix cuadrada 28x28
+
+```
+
+
+```{r}
+library(reshape2)
+#melt para pasar los datos a ggplot
+# toma la matriz y los pone como var1 var2 value
+#es como sistema de coordenas pixel (1,1) = value(0)
+digito <- melt(d) 
+#longData<-longData[longData$value!=0,]
+digito
+```
+
+
+```{r}
+theme_set(theme_light())
+ggplot(digito, aes(x= Var2, y =Var1)) +
+  geom_raster(aes(fill=value)) + scale_y_reverse()
+
+#geom_raster para que imprima una imagen fill con el valor que se tiene en el pixele
+```
+
+
+```{r}
+library(patchwork)
+p <- function(i){
+    d <- matrix(features[i,], nrow = 28, byrow = TRUE)
+    digito<-melt(d)
+    ggplot(digito, aes(x = Var2, y = Var1)) +
+    geom_raster(aes(fill=value)) +  coord_fixed() +
+      scale_y_reverse() +
+      theme_void() + theme(legend.position = "none")
+}
+
+
+```
+```{r}
+p(1) + p(2) + p(3) + p(4) + p(5) + p(6)
+```
+
+Actividad: Hacer un análisis estadístico de la distribución de pixeles para cada tipo de dígito
+
+
+
+```{r}
+labels_dig <-  mnist$train$labels
+labels_dig <- as.matrix(labels_dig)
+
+features2  <- as_tibble(cbind(labels_dig, features))
+```
+
+```{r}
+g <- function(i){
+  
+    contador <- features2 %>% 
+      filter(V1 == i) %>% 
+      select(-V1) %>% 
+      melt(id.vars = NULL)
+    
+     ggplot(contador, aes(x = value)) +
+       geom_histogram(binwidth = 5,fill = "darkslateblue") +
+       theme(plot.title = element_text(color = "midnightblue", size = 8, face = "bold"), 
+             axis.title = element_text(size=7))+
+       labs(title = paste("Number:", i),x = 'Pixeles', y = 'Freq')
+}
+
+```
+
+```{r}
+
+g5 <- function(i){
+  
+    contador <- features2 %>% 
+      filter(V1 == i) %>% 
+      select(-V1) %>% 
+      melt(id.vars = NULL) %>% 
+      count(value, sort = TRUE) %>% 
+      slice_max(n, n = 5)
+    
+     ggplot(contador, aes(x = factor(value), y = n)) +
+       geom_bar(fill = "darkslateblue", stat = "identity") +
+       theme(plot.title = element_text(color = "midnightblue", size = 8, face = "bold"),
+             axis.title = element_text(size=7), axis.text.x = element_text(angle = 65, vjust = 0.7, size = 8)) +
+       labs(title = paste("Top 5 Number:", i),x = 'Pixeles', y = 'Freq') 
+
+}
+
+```
+
+
+```{r}
+g(0) + g(1) + g(2) + g(3) + g(4) + g(5) + g(6) + g(7) +g(8) +g(9)    
+```
+
+```{r}
+g5(0) + g5(1) + g5(2) + g5(3) + g5(4) + g5(5) + g5(6) + g5(7) +g5(8) +g5(9)   
+```
+
+
+
+
+```{r}
+#Profe
+labels_dig <-  mnist$train$labels
+
+
+x <- features[1,] %>% as.data.frame()
+
+for(i in 2:6000) {
+  if(labels_dig[i] == 5){
+    x <- rbind(x, features[i,] %>% as.data.frame())
+  }
+}
+
+
+
+#as.data.frame(table(unlist(x)))
+
+```
+
+
+```{r}
+ggplot(x,aes(x=.)) + geom_histogram(binwidth= 5)
+
+```
+
+
+```{r}
+mnist_clustering <- kmeans(features, centers = 10, nstart = 10)
+```
+
+
+```{r}
+str(mnist_clustering)
+```
+
+
+```{r}
+# Extract cluster centers
+mnist_centers <- mnist_clustering$centers
+glimpse(mnist_centers)
+
+```
+
+
+```{r}
+
+pk<- function(i){
+    d <- matrix(mnist_centers[i,], nrow = 28, byrow = TRUE)
+    digito<-melt(d)
+    ggplot(digito, aes(x = Var2, y = Var1)) +
+    geom_raster(aes(fill=value)) +  coord_fixed() +
+      scale_y_reverse() +
+      theme_void() + theme(legend.position = "none")
+}
+
+```
+
+
+```{r}
+pk(1) + pk(2) + pk(3) + pk(4) + pk(5) + pk(6) + pk(7) + pk(8) + pk(9) + pk(10)
+
+```
+
+
+```{r}
+# Plot typical cluster digits
+par(mfrow = c(2, 5), mar=c(0.5, 0.5, 0.5, 0.5))
+layout(matrix(seq_len(nrow(mnist_centers)), 2, 5, byrow = FALSE))
+for(i in seq_len(nrow(mnist_centers))) {
+  image(matrix(mnist_centers[i, ], 28, 28)[, 28:1],xaxt="n", yaxt="n")
+}
+
+```
+
+
+```{r}
+# Create mode function
+mode_fun <- function(x){  
+  which.max(tabulate(x))
+}
+
+ 
+
+mnist_comparison <- data.frame(
+  cluster = mnist_clustering$cluster,
+  actual = mnist$train$labels
+) %>%
+  group_by(cluster) %>%
+  mutate(mode = mode_fun(actual)) %>%
+  ungroup() %>%
+  mutate_all(factor, levels = 0:9)
+
+ 
+
+# Create confusion matrix and plot results
+yardstick::conf_mat(
+  mnist_comparison, 
+  truth = actual, 
+  estimate = mode
+) %>%
+  autoplot(type = 'heatmap')
+#si hay muchos valores fuera de la diagonal, las cosas no van tan bien, y te dice en dónde esta el problema
+#identificar cuáles números fueron mal asignados 
+
+```
