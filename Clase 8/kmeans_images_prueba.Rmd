@@ -1,0 +1,112 @@
+---
+title: "kmeans_images"
+author: "Claudia Soto"
+date: "6/24/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Extracting dominant colours from pictures
+
+```{r}
+#install.packages("imager")
+library(imager)
+file <- "autumn_drawing_walking_82963_320x480.jpg"
+#file
+im <- load.image(file)
+plot(im)
+im2 <-  load.image("https://images.wallpaperscraft.com/image/autumn_drawing_walking_82963_800x1420.jpg")
+plot(im2)
+
+#file
+```
+
+```{r}
+library(tidyverse)
+library(tidymodels)
+bdf <- as.data.frame(im, wide ="c")
+
+```
+```{r}
+rgb(0.21,0.23,0.58)
+```
+
+```{r}
+ggplot(data.frame(x = 0, y = 0), aes(x, y)) + 
+  geom_point(size = 25,  color = "#333694")
+
+```
+```{r}
+data.frame(x =0, y = 0)
+```
+
+```{r}
+x = c(0, 0, 0) 
+y = c(0, 1, 2) 
+df = data.frame(x, y) 
+df
+```
+```{r}
+ggplot(df, aes(x, y)) + 
+  geom_point(size = 25,  color = "#333694")
+```
+
+
+
+```{r}
+set.seed(123)
+k1 <- kmeans(bdf[,c("c.1", "c.2", "c.3")],centers = 5, nstart = 10)
+
+```
+
+```{r}
+rgb(k1$centers)
+
+```
+
+
+```{r}
+show_col(rgb(k1$centers), labels=FALSE)
+```
+```{r}
+
+par(bg=NA)
+plot(im, axes= FALSE)
+legend("right", legend =c("", "", "", "", "") , fill = rgb(k1$centers), border =rgb(k1$centers), cex = 3,bty = "n", xpd=TRUE)
+
+
+#plot(im)
+```
+```{r}
+plot(im, axes= FALSE)
+legend("right", legend =c("", "", "", "", "") , fill = rgb(k1$centers), border =rgb(k1$centers), cex = 3,bty = "n", xpd=TRUE)
+
+```
+
+```{r fig.height = 3.5, fig.width=3}
+prueba <- bdf %>% 
+  select(x,y) 
+
+prueba2 <- as_tibble(cbind(prueba, k1$cluster))
+
+
+ggplot(data = prueba2, aes(x = x, y = y, color = as.factor(k1$cluster)))  +
+  geom_point() +
+  scale_colour_manual(values = rgb(k1$centers)) +
+  scale_y_reverse() +
+  theme_void() + 
+  labs(title = "Dominant Colors") +
+  theme(legend.position = "none")
+
+```
+```{r}
+length(im)
+width(im)
+height(im)
+im
+
+```
+
