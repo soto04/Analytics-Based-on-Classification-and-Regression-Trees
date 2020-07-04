@@ -1,0 +1,227 @@
+---
+title: "Decision Trees v.01"
+author: "Lazaro Alonso"
+date: "6/30/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Decision Trees
+https://en.wikipedia.org/wiki/Decision_tree_learning
+Decision tree learning is one of the predictive modelling approaches used in statistics, data mining and machine learning. It uses a decision tree (as a predictive model) to go from observations about an item (represented in the branches) to conclusions about the item's target value (represented in the leaves). Tree models where the target variable can take a discrete set of values are called classification trees; in these tree structures, leaves represent class labels and branches represent conjunctions of features that lead to those class labels. Decision trees where the target variable can take continuous values (typically real numbers) are called regression trees. Decision trees are among the most popular machine learning algorithms given their intelligibility and simplicity.
+
+In decision analysis, a decision tree can be used to visually and explicitly represent decisions and decision making. In data mining, a decision tree describes data (but the resulting classification tree can be an input for decision making). This page deals with decision trees in data mining.
+
+#### Decision tree types
+- __Classification tree__ analysis is when the predicted outcome is the class (discrete) to which the data belongs.
+- __Regression tree__ analysis is when the predicted outcome can be considered a real number (e.g. the price of a house, or a patient's length of stay in a hospital).
+
+The term Classification And Regression Tree (__CART__) analysis is an umbrella term used to refer to both of the above procedures, first introduced by Breiman et al. in 1984
+
+More than one decision tree: (ensemble methods):
+
+- Boosted trees (AdaBoost)
+- Boostrap agregated (bugged)
+  - Random forest classifier
+- ...
+
+#### Trees? 
+- Nodes: 
+  - test for the value of a certain attribute
+- Edges
+  - correspond to the outcome of a test
+  - connect to the next node or leaf
+- Leaves
+  - terminal nodes that predict the outcome
+
+![](trees.png)
+  
+
+The critical part is how to split ? i.e. The best split. 
+
+- Gini impurity (Tsallis Entropy) _[Theory lecture, next session]_
+- Information gain (which tell us how well an attribute splits the data) _[Theory lecture, next session]_.
+
+### Some code 
+##### Getting a tree
+
+Skipping the details about the splitting (for now), this is how we do it with the  _tidyverse_ suite. 
+
+```{r}
+library(tidymodels)
+library(rpart)
+library(rpart.plot)
+```
+
+Let's play around with some portion of titanic's tragedy. 
+
+```{r}
+data(ptitanic)
+ptitanic %>% View()
+str(ptitanic)
+```
+
+
+```{r}
+model_tree <-
+  decision_tree(cost_complexity = 0.004) %>%
+  set_engine("rpart") %>%
+  set_mode("classification") %>% 
+  translate()
+model_tree
+```
+
+Or we could call directly to __rpart__. See example below. 
+
+```{r}
+survived_verse <- model_tree %>% 
+  fit(survived ~ ., data = ptitanic)
+survived_verse
+```
+
+Or just using __rpart__. 
+
+```{r}
+survived <- rpart(survived ~ ., data = ptitanic, cp = 0.02)
+survived
+```
+```{r}
+# all  the details
+summary(survived)
+```
+
+Remember: always ask for help. 
+
+```{r}
+?rpart
+#?decision_tree
+```
+
+And now we can plot the trees (inverted trees actually). 
+
+- Another possible way to plot them is by using  https://cran.r-project.org/web/packages/ggparty/vignettes/ggparty-graphic-partying.html
+
+### - Option 1. 
+
+```{r}
+rpart.plot(survived_verse$fit, roundint=FALSE)
+```
+
+Each node shows
+
+- the predicted class (died or survived),
+- the predicted probability of survival,
+- the percentage of observations in the node.
+
+### - Option 2 (with more fine-tunning)
+For more info go to http://www.milbo.org/rpart-plot/prp.pdf
+
+```{r}
+rpart.plot(survived, type = 4, clip.right.labs = FALSE, branch = .3, under = TRUE)
+```
+Are they the same? Yes. 
+
+What about cp ?? how fast do we reach this treshold. 
+```{r}
+rpart::plotcp(survived)
+```
+
+```{r}
+rpart::plotcp(survived_verse$fit)
+# This looks a little bit different, so it seems that there small differences after all. 
+```
+
+Play a little bit with this parameter, __cp__, and see how our results change. 
+
+
+```{r}
+ptitanic[1:3,]
+```
+```{r}
+rpart.predict(survived, newdata=ptitanic[1:3,], rules=TRUE)
+```
+```{r}
+?rpart.predict
+```
+
+
+```{r}
+rpart.rules(survived)
+```
+
+
+- Independet work: work with the __Carseats__ dataset, install the __ISLR__ package. 
+
+```{r}
+library(ISLR)
+#data(package="ISLR")
+carseats<-Carseats
+str(carseats)
+```
+Observe that __Sales__ is a quantitative variable (show this with a plot). You want to demonstrate it using trees with a binary response. To do so, you turn __Sales__ into a binary variable, which will be called High. If the sales is less than 8, it will be not high. Otherwise, it will be high. Then you can put that new variable High back into the dataframe.
+
+- plot 
+```{r}
+?Carseats
+```
+```{r}
+hist(carseats$Sales)
+```
+
+
+
+```{r}
+High = ifelse(carseats$Sales<=8, "No", "Yes")
+carseats = data.frame(carseats, High)
+summary(carseats)
+```
+```{r}
+model_tree2 <-
+  decision_tree(cost_complexity = 0.04) %>%
+  set_engine("rpart") %>%
+  set_mode("classification") %>% 
+  translate()
+model_tree2
+```
+
+
+```{r}
+tree.carseats <- model_tree2 %>% 
+  fit(as.factor(High)~.-Sales, data=carseats)
+tree.carseats
+```
+```{r}
+rpart::plotcp(tree.carseats$fit)
+```
+```{r}
+rpart.plot(tree.carseats$fit, type = 4,roundint=FALSE)
+```
+
+
+
+- Activity 2. Obtain the decission tree for the _iris_ data set. 
+
+```{r}
+iris
+```
+```{r}
+model_tree3 <-
+  decision_tree() %>%
+  set_engine("rpart") %>%
+  set_mode("classification") %>% 
+  translate()
+model_tree3
+
+tree.iris <- model_tree3 %>% 
+  fit(Species~., data=iris)
+tree.iris
+```
+```{r}
+rpart.plot(tree.iris$fit,roundint=FALSE)
+```
+
+
+
