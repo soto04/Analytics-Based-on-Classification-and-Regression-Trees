@@ -36,9 +36,9 @@ ui <- fluidPage(
                      the document?"),
         p("Here, as an example we will be considering "),
         h3("Jane Austen's novels."),
-        img(src = "Jane_Austen.jpg", height = 200, widht = 150),
+        img(src = "Jane_Austen.jpg", height = 200, width = 150),
         #img(src = "https://ep01.epimg.net/cultura/imagenes/2017/07/14/babelia/1500041594_163366_1500042008_noticia_normal_recorte1.jpg",
-        #    height = 200, widht = 150),
+        #    height = 200, width = 150),
         br(),
         br(),
         code("by @soto04")
