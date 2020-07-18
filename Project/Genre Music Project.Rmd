@@ -1,0 +1,447 @@
+---
+title: "Genre Music Tree"
+author: "Claudia Soto"
+date: "13/7/2020"
+output: 
+  html_document:
+    toc: TRUE
+    toc_float: TRUE
+    theme: darkly
+    highlight: pygments
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r pkgs, message=FALSE}
+library(ggplot2)
+library(tidymodels)
+library(tidyverse)
+library(patchwork)
+library(rpart)
+library(rpart.plot)
+
+```
+
+## Description
+
+
+Using a dataset comprised of songs of two music genres (Hip-Hop and Rock), we will train a classifier to distinguish between the two genres based only on track information derived from Echonest (now part of Spotify).
+
+Streaming services have looked into means of categorizing music to allow for personalized recommendations. One method involves direct analysis of the raw audio information in a given song, scoring the raw data on a variety of metrics.
+
+Let's load the metadata about our tracks alongside the track metrics compiled by The Echo Nest. A song is about more than its title, artist, and number of listens. We have another dataset that has musical features of each track such as danceability and acousticness on a scale from -1 to 1.
+
+Only those related to the audio features were used:
+
+- Instrumentalness: This value represents the amount of vocals in the song. The closer it is to 1.0, the more instrumental the song is.
+
+- Acousticness: This value describes how acoustic a song is. A score of 1.0 means the song is most likely to be an acoustic one.
+
+- Liveness: This value describes the probability that the song was recorded with a live audience. According to the official documentation “a value above 0.8 provides strong likelihood that the track is live”.
+
+- Speechiness: “Speechiness detects the presence of spoken words in a track”. If the speechiness of a song is above 0.66, it is probably made of spoken words, a score between 0.33 and 0.66 is a song that may contain both music and words, and a score below 0.33 means the song does not have any speech.
+
+- Energy: “(energy) represents a perceptual measure of intensity and activity. Typically, energetic tracks feel fast, loud, and noisy”.
+
+- Danceability: “Danceability describes how suitable a track is for dancing based on a combination of musical elements including tempo, rhythm stability, beat strength, and overall regularity. A value of 0.0 is least danceable and 1.0 is most danceable”.
+
+- Valence: “A measure from 0.0 to 1.0 describing the musical positiveness conveyed by a track. Tracks with high valence sound more positive (e.g. happy, cheerful, euphoric), while tracks with low valence sound more negative (e.g. sad, depressed, angry)”.
+
+- Tempo: The overall estimated tempo of a track in beats per minute (BPM). In musical terminology, tempo is the speed or pace of a given piece and derives directly from the average beat duration.
+
+For more information [Song Genre Classification from Audio Data using ML](https://www.kaggle.com/ajaymanwani/song-genre-classification-from-audio-data-using-ml).
+
+```{r}
+data <- read.csv("fma-rock-vs-hiphop.csv")
+data_echo <- jsonlite::fromJSON("echonest-metrics.json")
+
+```
+
+```{r}
+head(data)
+    
+```
+```{r} 
+ls(data_echo)
+
+```
+```{r}
+echo_track <- unnest(as_tibble(data_echo,validate = FALSE), col = ls(data_echo)) 
+
+head(echo_track) 
+
+
+```
+```{r}
+glimpse(echo_track)
+```
+
+```{r}
+echo_track <- echo_track %>% 
+  inner_join(data %>% select("track_id", "genre_top"), by = "track_id")
+
+head(echo_track)  
+  
+```
+## Graphs
+
+```{r}
+# RColorBrewer::display.brewer.pal(n = 8, name = "Set1")
+# RColorBrewer::brewer.pal(n= 8, "Set1")
+# RColorBrewer::brewer.pal(4, "Blues")[2:4]
+# RColorBrewer::display.brewer.pal(n = 9, name = "BuPu")
+
+ggplot(data = echo_track, aes(x = genre_top)) +
+  geom_bar(aes(fill = genre_top)) +
+  labs(title = "Genre of Music", x = "", fill = "") + 
+  scale_fill_manual(values =c( "#984EA3","#386CB0" ))+ theme_bw() +theme(legend.position = "none")
+
+```
+```{r}
+
+
+echo_track %>%
+  keep(is.numeric) %>% #return the columns that return TRUE
+  select(-track_id) %>% 
+  gather() %>% # will convert a selection of columns into two columns: a key and a value
+  ggplot(aes(value, fill = key)) +
+  facet_wrap(~ key, scales = "free") +
+  geom_histogram(bins = 50) + 
+  scale_fill_brewer(palette = "Set2") +
+  theme_minimal() +
+  theme(legend.position = "none") +
+  labs(title = "Rock and Hip Hop", x = "", fill = "")
+
+```
+
+```{r}
+
+echo_track %>%
+  filter(genre_top == "Hip-Hop") %>% 
+  keep(is.numeric) %>% #return the columns that return TRUE
+  select(-track_id) %>% 
+  gather() %>% # will convert a selection of columns into two columns: a key and a value
+  ggplot(aes(value, fill = key)) +
+  facet_wrap(~ key, scales = "free") +
+  geom_histogram(bins = 50) + 
+  scale_fill_brewer(palette = "Set2") +
+  theme_minimal() +
+  theme(legend.position = "none") +
+  labs(title = "Hip Hop", x = "", fill = "")
+
+
+
+```
+```{r} 
+echo_track %>%
+  filter(genre_top == "Rock") %>% 
+  keep(is.numeric) %>% #return the columns that return TRUE
+  select(-track_id) %>% 
+  gather() %>%  # will convert a selection of columns into two columns: a key and a value
+  ggplot(aes(value, fill = key)) +
+  facet_wrap(~ key, scales = "free") +
+  geom_histogram(bins = 50) + 
+  scale_fill_brewer(palette = "Set2") +
+  theme_minimal() +
+  theme(legend.position = "none") +
+  labs(title = "Rock", x = "", fill = "") 
+ # geom_vline(data = prueba %>% group_by(key) %>% summarise( mean = mean(value)), mapping = aes(xintercept = mean), color = "red", linetype = "dashed")
+
+
+
+```
+```{r}
+
+echo_track %>%
+  select(tempo, instrumentalness, speechiness, genre_top) %>%
+  gather(key, value, -genre_top ) %>% 
+  ggplot(aes(x = genre_top, y = value, color = genre_top)) + 
+  facet_wrap(~ key, scales = "free") +  
+  geom_violin() +
+  scale_color_manual(values = c("#984EA3","#386CB0")) +
+  stat_summary(fun=median, geom="point", size=2, color="red") +
+  theme_minimal() +
+  theme(legend.position = "none") +
+  labs(title="Violin Plot", x = "", y = "", color = "") 
+```
+```{r}
+
+echo_track %>%
+  select(-track_id) %>% 
+  #select(genre_top, acousticness) %>% 
+  gather(key, value, -genre_top) %>%
+  ggplot(aes(x = genre_top, y = value)) +
+  facet_wrap(~ key, scales = "free") +
+  geom_boxplot(aes(fill = genre_top), alpha = 0.6) +
+  scale_fill_manual(values = c("mediumvioletred","midnightblue")) +
+  theme_minimal() +
+  theme(legend.position = "none") +
+  labs(title = "Box Plot", x = "", y = "") 
+
+```
+
+```{r}
+round(cor(echo_track %>% keep(is.numeric) %>% select(-track_id)), digits=4)
+
+```
+
+```{r}
+ggplot(data = echo_track, aes(x = valence, y = danceability, color = genre_top)) +
+  geom_point(alpha = 0.15, size = 2) +
+  scale_color_manual(values = c("mediumvioletred","midnightblue")) +
+  labs(x = "Valence", y = "Danceability", color = "Genre") +
+  theme_light()
+
+
+```
+```{r}
+round(cor(echo_track %>% filter(genre_top == "Hip-Hop") %>% keep(is.numeric) %>% select(-track_id)), digits=4)
+```
+```{r}
+ggplot(data = echo_track %>% filter(genre_top == "Hip-Hop"), aes(x = instrumentalness, y = speechiness)) +
+  geom_point(alpha = 0.15, size = 2, color = "mediumvioletred") +
+  labs(x = "Instrumentalness", y = "Speechiness") +
+  theme_light()
+```
+
+
+
+```{r}
+round(cor(echo_track %>% filter(genre_top == "Rock") %>% keep(is.numeric) %>% select(-track_id)), digits=4)
+
+
+
+```
+
+
+```{r}
+
+ggplot(data = echo_track %>% filter(genre_top == "Rock"), aes(x = valence, y = danceability)) +
+  geom_point(alpha = 0.15, size = 2, color = "midnightblue") +
+  labs(x = "Valence", y = "Danceability") +
+  theme_light() 
+
+```
+## Trees
+```{r}
+#split
+
+
+
+```
+
+### Decision Tree
+```{r}
+tree.music <- rpart(genre_top ~ ., data = echo_track %>% select(-track_id), cp = 0.01)
+
+tree.music
+```
+
+
+```{r}
+
+# rpart.plot(tree.music, type =2, roundint = FALSE)
+#show.prp.palettes() 
+paleta <- c(RColorBrewer::brewer.pal(n= 9, "Blues")[3:8], 
+            RColorBrewer::brewer.pal(n= 9, "Purples")[3:8])
+
+tree.music <- rpart(genre_top ~ ., data = echo_track %>% select(-track_id), cp = 0.01)
+
+tree.music
+
+
+rpart.plot(tree.music, type = 2,  under = TRUE,  roundint=FALSE, 
+           box.palette = paleta, 
+           round = 0, shadow.col = "gray")
+
+
+#rpart.rules(tree.music, extra = 4,roundint = FALSE)
+
+# Rock classification probability is .94 rule 7
+
+
+```
+
+```{r}
+#rpart.plot(tree.music, type = 2, clip.right.labs = FALSE, branch = .3, under = TRUE,  roundint=FALSE)
+rpart.rules(tree.music, extra = 9,roundint = FALSE)
+
+#A fraction 0.73 of all of rock song is covered by the rule (7)
+
+```
+
+```{r}
+path.to.root <- function(node)
+{
+if(node == 1) # root?
+node
+else # recurse, %/% 2 gives the parent of node
+c(node, path.to.root(node %/% 2))
+}
+node <- 11 # 11 is our chosen node, arbitrary for this example
+nodes <- as.numeric(row.names(tree.music$frame))
+cols <- ifelse(nodes %in% path.to.root(node), "midnightblue", "gray")
+prp(tree.music, nn = TRUE,roundint = FALSE,
+col = cols, branch.col = cols, split.col = cols, nn.col = cols)
+
+
+```
+
+```{r}
+tree.music <- rpart(genre_top~., data = echo_track %>% select(-track_id), 
+                    cp = 0.01)
+
+tree.music
+
+prueba <- printcp(tree.music) 
+
+```
+
+
+```{r}
+
+rpart::plotcp(tree.music)
+```
+
+
+```{r}
+tree.music$cptable[which.min(tree.music$cptable[,"xerror"]),"CP"]
+```
+
+
+```{r}
+tree.music <- rpart(genre_top ~ ., data = echo_track %>% select(-track_id), cp = 0.01, parms = list(split = "gini"))
+
+tree.music
+
+
+rpart.plot(tree.music, type = 2,  under = TRUE,  roundint=FALSE, 
+           box.palette = paleta, 
+           round = 0, shadow.col = "gray")
+
+```
+```{r}
+printcp(tree.music) 
+```
+
+
+```{r}
+rpart::plotcp(tree.music)
+
+```
+
+
+```{r}
+tree.music <- rpart(genre_top ~ ., data = echo_track %>% select(-track_id), cp = 0.01, parms = list(split = 'information'))
+
+tree.music
+
+
+rpart.plot(tree.music, type = 2,  under = TRUE,  roundint=FALSE, 
+           box.palette = paleta, 
+           round = 0, shadow.col = "gray")
+
+```
+
+
+```{r}
+printcp(tree.music) 
+```
+
+
+```{r}
+rpart::plotcp(tree.music)
+```
+```{r}
+library (randomForest)
+library(caret)
+```
+
+
+```{r}
+# 
+# echo_train <- echo_track %>% 
+#   slice(train_index) %>% 
+#   select(-track_id)
+# 
+# echo_test <- echo_track %>% 
+#   slice(-train_index) %>% 
+#   select(-track_id)
+
+set.seed(1)
+
+data_split <- initial_split(echo_track %>% select(-track_id), prop=0.80, strata = "genre_top")
+echo_train <- training(data_split)
+echo_test <- testing(data_split)
+
+
+```
+
+
+```{r}
+set.seed(1)
+rf_echo <- randomForest(factor(genre_top) ~ ., data = echo_train, importance=TRUE, ntree = 50, mtry = 5)
+rf_echo
+
+```
+
+
+```{r}
+
+echo_pred <- predict(rf_echo, echo_test, type = "class")
+table(echo_pred, echo_test$genre_top)
+
+varImpPlot(rf_echo)
+```
+```{r}
+genre_pred <- as.character(echo_pred)
+
+```
+
+```{r}
+MLmetrics:: F1_Score(y_true = echo_test$genre_top, y_pred = genre_pred, positive = NULL)
+MLmetrics::Accuracy(y_pred =genre_pred, y_true = echo_test$genre_top)
+MLmetrics::Recall(y_true = echo_test$genre_top, y_pred = genre_pred, positive = NULL)
+MLmetrics::Precision(y_true = echo_test$genre_top, y_pred = genre_pred, positive = NULL)
+
+```
+```{r}
+library(baguette)
+
+set.seed(1)
+ctrl <- control_bag(var_imp = TRUE)
+bag_echo <- bagger(factor(genre_top) ~ ., data = echo_train, base_model = "C5.0", control = ctrl, times = 10)
+bag_echo
+
+```
+
+
+```{r}
+
+predictions <- predict(bag_echo, new_data=echo_test %>% select(-genre_top))
+
+
+echo_pred <- predict(bag_echo, new_data = echo_test %>% select(-genre_top), type = "class")
+head(echo_pred)
+
+# Checking classification accuracy
+table(echo_pred, echo_test$genre_top)
+
+
+```
+```{r}
+genre_pred <- as.character(echo_pred)
+
+
+```
+
+```{r}
+MLmetrics:: F1_Score(y_true = echo_test$genre_top, y_pred = genre_pred, positive = NULL)
+MLmetrics::Accuracy(y_pred =genre_pred, y_true = echo_test$genre_top)
+MLmetrics::Recall(y_true = echo_test$genre_top, y_pred = genre_pred, positive = NULL)
+MLmetrics::Precision(y_true = echo_test$genre_top, y_pred = genre_pred, positive = NULL)
+
+```
